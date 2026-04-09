@@ -7,7 +7,7 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public event Action<eStateGame> StateChangedAction = delegate { };
-
+    public GameManager.eLevelMode CurrentMode { get; private set; }
     public enum eLevelMode
     {
         TIMER,
@@ -20,8 +20,10 @@ public class GameManager : MonoBehaviour
         MAIN_MENU,
         GAME_STARTED,
         PAUSE,
-        GAME_OVER,
+        GAME_WIN,
+        GAME_LOSE 
     }
+
 
     private eStateGame m_state;
     public eStateGame State
@@ -83,8 +85,12 @@ public class GameManager : MonoBehaviour
 
     public void LoadLevel(eLevelMode mode)
     {
+        CurrentMode = mode;
         m_boardController = new GameObject("BoardController").AddComponent<BoardController>();
-        m_boardController.StartGame(this, m_gameSettings);
+        GameObject barGO = Instantiate(Resources.Load<GameObject>("Prefabs/SelectionBar"));
+        var selectionBar = barGO.GetComponent<SelectionBar>();
+        barGO.transform.SetParent(m_boardController.transform);
+        m_boardController.StartGame(this, m_gameSettings, selectionBar);
 
         if (mode == eLevelMode.MOVES)
         {
@@ -94,18 +100,23 @@ public class GameManager : MonoBehaviour
         else if (mode == eLevelMode.TIMER)
         {
             m_levelCondition = this.gameObject.AddComponent<LevelTime>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), this);
+            m_levelCondition.Setup(60f, m_uiMenu.GetLevelConditionView(), this);
         }
 
         m_levelCondition.ConditionCompleteEvent += GameOver;
 
         State = eStateGame.GAME_STARTED;
+        if (PlayerPrefs.GetInt("AutoPlay", 0) == 1)
+        {
+            bool lose = PlayerPrefs.GetInt("AutoLose", 0) == 1;
+            m_boardController.StartCoroutine(m_boardController.AutoPlay(lose, 0.5f));
+        }
     }
 
-    public void GameOver()
-    {
-        StartCoroutine(WaitBoardController());
-    }
+    //public void GameOver()
+    //{
+    //    StartCoroutine(WaitBoardController());
+    //}
 
     internal void ClearLevel()
     {
@@ -117,23 +128,47 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private IEnumerator WaitBoardController()
+    //private IEnumerator WaitBoardController()
+    //{
+    //    while (m_boardController.IsBusy)
+    //    {
+    //        yield return new WaitForEndOfFrame();
+    //    }
+
+    //    yield return new WaitForSeconds(1f);
+
+    //    State = eStateGame.GAME_OVER;
+
+    //    if (m_levelCondition != null)
+    //    {
+    //        m_levelCondition.ConditionCompleteEvent -= GameOver;
+
+    //        Destroy(m_levelCondition);
+    //        m_levelCondition = null;
+    //    }
+    //}
+    public void GameOver()
     {
-        while (m_boardController.IsBusy)
+        if (m_boardController)
         {
-            yield return new WaitForEndOfFrame();
+            m_boardController.Clear();
+            Destroy(m_boardController.gameObject);
+            m_boardController = null;
         }
 
-        yield return new WaitForSeconds(1f);
-
-        State = eStateGame.GAME_OVER;
-
-        if (m_levelCondition != null)
-        {
-            m_levelCondition.ConditionCompleteEvent -= GameOver;
-
-            Destroy(m_levelCondition);
-            m_levelCondition = null;
-        }
+        State = eStateGame.GAME_LOSE;
     }
+
+    public void Win()
+    {
+        if (m_boardController)
+        {
+            m_boardController.Clear();
+            Destroy(m_boardController.gameObject);
+            m_boardController = null;
+        }
+
+        State = eStateGame.GAME_WIN;
+    }
+
 }

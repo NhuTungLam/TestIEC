@@ -74,41 +74,61 @@ public class Board
 
     internal void Fill()
     {
+        int total = boardSizeX * boardSizeY;
+        if (total % 3 != 0)
+        {
+            return;
+        }
+        List<NormalItem.eNormalType> bag = BuildTripletBag(total);
+
+        for (int i = 0; i < bag.Count; i++)
+        {
+            int j = UnityEngine.Random.Range(i, bag.Count);
+            (bag[i], bag[j]) = (bag[j], bag[i]);
+        }
+
+        int k = 0;
         for (int x = 0; x < boardSizeX; x++)
         {
             for (int y = 0; y < boardSizeY; y++)
             {
                 Cell cell = m_cells[x, y];
-                NormalItem item = new NormalItem();
-
-                List<NormalItem.eNormalType> types = new List<NormalItem.eNormalType>();
-                if (cell.NeighbourBottom != null)
-                {
-                    NormalItem nitem = cell.NeighbourBottom.Item as NormalItem;
-                    if (nitem != null)
-                    {
-                        types.Add(nitem.ItemType);
-                    }
-                }
-
-                if (cell.NeighbourLeft != null)
-                {
-                    NormalItem nitem = cell.NeighbourLeft.Item as NormalItem;
-                    if (nitem != null)
-                    {
-                        types.Add(nitem.ItemType);
-                    }
-                }
-
-                item.SetType(Utils.GetRandomNormalTypeExcept(types.ToArray()));
+                var item = new NormalItem();
+                item.SetType(bag[k++]);
                 item.SetView();
-                item.SetViewRoot(m_root);
-
+                item.SetViewRoot(m_root); 
                 cell.Assign(item);
-                cell.ApplyItemPosition(false);
+                cell.ApplyItemPosition(false); 
             }
         }
     }
+
+    private List<NormalItem.eNormalType> BuildTripletBag(int totalCells)
+    {
+        int triplets = totalCells / 3;
+
+        var allTypes = new List<NormalItem.eNormalType>(
+            (NormalItem.eNormalType[])Enum.GetValues(typeof(NormalItem.eNormalType))
+        );
+
+        var bag = new List<NormalItem.eNormalType>(totalCells);
+
+        int guaranteed = Mathf.Min(allTypes.Count, triplets);
+        for (int i = 0; i < guaranteed; i++)
+        {
+            var t = allTypes[i];
+            bag.Add(t); bag.Add(t); bag.Add(t);
+        }
+        for (int left = triplets - guaranteed; left > 0; left--)
+        {
+            var t = allTypes[UnityEngine.Random.Range(0, allTypes.Count)];
+            bag.Add(t); bag.Add(t); bag.Add(t);
+        }
+
+        return bag;
+    }
+
+
 
     internal void Shuffle()
     {
@@ -133,6 +153,12 @@ public class Board
                 list.RemoveAt(rnd);
             }
         }
+    }
+    public IEnumerable<Cell> AllCells()
+    {
+        for (int x = 0; x < boardSizeX; x++)
+            for (int y = 0; y < boardSizeY; y++)
+                yield return m_cells[x, y];
     }
 
 
@@ -658,6 +684,22 @@ public class Board
                 item.View.DOMove(holder.transform.position, 0.3f);
             }
         }
+    }
+    public int CountNonEmptyCells()
+    {
+        int count = 0;
+        for (int x = 0; x < boardSizeX; x++)
+        {
+            for (int y = 0; y < boardSizeY; y++)
+            {
+                Cell cell = m_cells[x, y];
+                if (cell != null && !cell.IsEmpty)
+                {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     public void Clear()

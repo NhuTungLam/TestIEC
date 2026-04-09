@@ -66,7 +66,10 @@ public class UIMainManager : MonoBehaviour
             case GameManager.eStateGame.PAUSE:
                 ShowMenu<UIPanelPause>();
                 break;
-            case GameManager.eStateGame.GAME_OVER:
+            case GameManager.eStateGame.GAME_WIN:
+                ShowMenu<UIPanelWin>();
+                break;
+            case GameManager.eStateGame.GAME_LOSE:
                 ShowMenu<UIPanelGameOver>();
                 break;
         }

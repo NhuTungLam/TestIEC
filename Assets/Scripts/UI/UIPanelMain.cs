@@ -9,7 +9,8 @@ public class UIPanelMain : MonoBehaviour, IMenu
     [SerializeField] private Button btnTimer;
 
     [SerializeField] private Button btnMoves;
-
+    [SerializeField] private Button btnAutoplay;
+    [SerializeField] private Button btnAutoLose;
     private UIMainManager m_mngr;
 
     private void Awake()
@@ -27,18 +28,37 @@ public class UIPanelMain : MonoBehaviour, IMenu
     public void Setup(UIMainManager mngr)
     {
         m_mngr = mngr;
+        btnAutoplay.onClick.AddListener(OnClickAutoplay);
+        btnAutoLose.onClick.AddListener(OnClickAutoLose);
     }
 
     private void OnClickTimer()
     {
+        PlayerPrefs.SetInt("AutoPlay", 0);
+        PlayerPrefs.SetInt("AutoLose", 0);
         m_mngr.LoadLevelTimer();
     }
 
     private void OnClickMoves()
     {
+        PlayerPrefs.SetInt("AutoPlay", 0);
+        PlayerPrefs.SetInt("AutoLose", 0);
         m_mngr.LoadLevelMoves();
     }
 
+    private void OnClickAutoplay()
+    {
+        PlayerPrefs.SetInt("AutoPlay", 1);
+        PlayerPrefs.SetInt("AutoLose", 0);
+        m_mngr.LoadLevelMoves(); 
+    }
+
+    private void OnClickAutoLose()
+    {
+        PlayerPrefs.SetInt("AutoPlay", 1);
+        PlayerPrefs.SetInt("AutoLose", 1);
+        m_mngr.LoadLevelMoves();
+    }
     public void Show()
     {
         this.gameObject.SetActive(true);
